@@ -1,0 +1,40 @@
+# Devshell — hardened SSH configuration
+# Keys-only auth. Tailscale is the network boundary.
+
+Port 22
+AddressFamily any
+ListenAddress 0.0.0.0
+
+# Authentication
+PermitRootLogin no
+PasswordAuthentication no
+PubkeyAuthentication yes
+AuthorizedKeysFile /home/dev/.ssh/authorized_keys
+MaxAuthTries 3
+MaxSessions 10
+
+# Security
+X11Forwarding no
+PermitEmptyPasswords no
+ChallengeResponseAuthentication no
+UsePAM no
+PermitUserEnvironment no
+
+# Forwarding (needed for Docker, git, etc.)
+AllowTcpForwarding yes
+GatewayPorts no
+AllowAgentForwarding yes
+
+# Keepalive (prevents Termius disconnects)
+ClientAliveInterval 60
+ClientAliveCountMax 3
+
+# Logging
+LogLevel INFO
+SyslogFacility AUTH
+
+# SFTP
+Subsystem sftp /usr/lib/openssh/sftp-server
+
+# Restrict to dev user
+AllowUsers dev
