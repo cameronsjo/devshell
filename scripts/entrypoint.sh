@@ -48,8 +48,20 @@ if [ -S /var/run/docker.sock ]; then
     usermod -aG docker dev
 fi
 
-# Generate host keys if missing (first boot with persistent volume)
-ssh-keygen -A
+# Persist SSH host keys across container rebuilds
+# Store in /home/dev/.ssh/host_keys/ (on the persistent volume)
+HOST_KEY_DIR="/home/dev/.ssh/host_keys"
+mkdir -p "${HOST_KEY_DIR}"
+if [ -f "${HOST_KEY_DIR}/ssh_host_ed25519_key" ]; then
+    cp "${HOST_KEY_DIR}"/ssh_host_* /etc/ssh/
+    chmod 600 /etc/ssh/ssh_host_*_key
+    chmod 644 /etc/ssh/ssh_host_*_key.pub
+    echo "Restored SSH host keys from persistent volume"
+else
+    ssh-keygen -A
+    cp /etc/ssh/ssh_host_* "${HOST_KEY_DIR}/"
+    echo "Generated new SSH host keys (saved to persistent volume)"
+fi
 
 # Create privilege separation directory
 mkdir -p /run/sshd
