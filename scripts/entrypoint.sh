@@ -19,6 +19,9 @@ else
     useradd -u "${PUID}" -g "${PGID}" -m -s /bin/zsh -d /home/dev dev
 fi
 
+# Unlock account (useradd creates locked accounts — sshd rejects locked users)
+passwd -u dev 2>/dev/null || usermod -p '*' dev
+
 # Passwordless sudo
 echo "dev ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/dev
 chmod 0440 /etc/sudoers.d/dev
