@@ -7,16 +7,12 @@ PGID="${PGID:-1000}"
 
 echo "Starting devshell with UID=${PUID}, GID=${PGID}"
 
-# Create/update group — use existing group at PGID if one exists, otherwise create 'dev'
-EXISTING_GROUP=$(getent group "${PGID}" | cut -d: -f1 || true)
-if [ -n "${EXISTING_GROUP}" ]; then
-    DEV_GROUP="${EXISTING_GROUP}"
-else
-    groupadd -g "${PGID}" dev
-    DEV_GROUP="dev"
-fi
+# Remove existing ubuntu user/group that ships with the base image (owns UID/GID 1000)
+userdel -r ubuntu 2>/dev/null || true
+groupdel ubuntu 2>/dev/null || true
 
-# Create/update user
+# Create dev group and user
+groupadd -g "${PGID}" dev 2>/dev/null || true
 if id dev > /dev/null 2>&1; then
     usermod -u "${PUID}" -g "${PGID}" -s /bin/zsh dev
 else
