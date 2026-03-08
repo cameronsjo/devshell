@@ -72,7 +72,7 @@ RUN install -m 0755 -d /etc/apt/keyrings && \
 
 # mise (runtime version manager — installs Node.js, Python, Go into persistent home)
 RUN curl https://mise.run | sh && \
-    ln -s /root/.local/bin/mise /usr/local/bin/mise
+    cp /root/.local/bin/mise /usr/local/bin/mise
 
 # uv (Python package manager)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
