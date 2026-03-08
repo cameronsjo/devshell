@@ -7,11 +7,13 @@ PGID="${PGID:-1000}"
 
 echo "Starting devshell with UID=${PUID}, GID=${PGID}"
 
-# Create/update group
-if getent group dev > /dev/null 2>&1; then
-    groupmod -g "${PGID}" dev
+# Create/update group — use existing group at PGID if one exists, otherwise create 'dev'
+EXISTING_GROUP=$(getent group "${PGID}" | cut -d: -f1 || true)
+if [ -n "${EXISTING_GROUP}" ]; then
+    DEV_GROUP="${EXISTING_GROUP}"
 else
     groupadd -g "${PGID}" dev
+    DEV_GROUP="dev"
 fi
 
 # Create/update user
