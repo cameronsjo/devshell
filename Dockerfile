@@ -86,6 +86,10 @@ RUN curl -fsSL "https://github.com/getsops/sops/releases/download/v3.9.4/sops-v3
     | tar xz -C /tmp && mv /tmp/age/age /usr/local/bin/age && \
     mv /tmp/age/age-keygen /usr/local/bin/age-keygen && rm -rf /tmp/age
 
+# Starship prompt + zoxide (smart cd)
+RUN curl -sS https://starship.rs/install.sh | sh -s -- -y && \
+    curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
+
 # Claude Code (installed globally via npm — mise provides Node.js at runtime,
 # but we need npm available at build time for the global install)
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
