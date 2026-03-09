@@ -22,7 +22,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Shell
     zsh \
     tmux \
-    fzf \
     # Dev tools
     git \
     jq \
@@ -37,7 +36,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# ripgrep, fd-find, bat, delta — install from GitHub releases (Ubuntu repos are ancient)
+# ripgrep, fd-find, bat, delta, fzf — install from GitHub releases (Ubuntu repos are ancient)
 RUN ARCH="$(dpkg --print-architecture)" && \
     # ripgrep
     curl -fsSL "https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep_14.1.1-1_${ARCH}.deb" -o /tmp/rg.deb && \
@@ -51,6 +50,9 @@ RUN ARCH="$(dpkg --print-architecture)" && \
     # delta
     curl -fsSL "https://github.com/dandavison/delta/releases/download/0.18.2/git-delta_0.18.2_${ARCH}.deb" -o /tmp/delta.deb && \
     dpkg -i /tmp/delta.deb && \
+    # fzf (apt version too old for --zsh flag)
+    curl -fsSL "https://github.com/junegunn/fzf/releases/download/v0.60.3/fzf-0.60.3-linux_${ARCH}.tar.gz" \
+    | tar xz -C /usr/local/bin fzf && \
     rm -f /tmp/*.deb
 
 # GitHub CLI
@@ -86,9 +88,11 @@ RUN curl -fsSL "https://github.com/getsops/sops/releases/download/v3.9.4/sops-v3
     | tar xz -C /tmp && mv /tmp/age/age /usr/local/bin/age && \
     mv /tmp/age/age-keygen /usr/local/bin/age-keygen && rm -rf /tmp/age
 
-# Starship prompt + zoxide (smart cd)
-RUN curl -sS https://starship.rs/install.sh | sh -s -- -y && \
-    curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
+# Starship prompt + zoxide (smart cd) — direct binary installs to /usr/local/bin
+RUN curl -fsSL "https://github.com/starship/starship/releases/latest/download/starship-x86_64-unknown-linux-gnu.tar.gz" \
+    | tar xz -C /usr/local/bin starship && \
+    curl -fsSL "https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.9/zoxide-0.9.9-x86_64-unknown-linux-musl.tar.gz" \
+    | tar xz -C /usr/local/bin zoxide
 
 # Charmbracelet tools — gum (TUI prompts), glow (markdown viewer)
 RUN ARCH="$(dpkg --print-architecture)" && \
