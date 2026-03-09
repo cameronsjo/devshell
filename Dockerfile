@@ -90,6 +90,14 @@ RUN curl -fsSL "https://github.com/getsops/sops/releases/download/v3.9.4/sops-v3
 RUN curl -sS https://starship.rs/install.sh | sh -s -- -y && \
     curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
 
+# Charmbracelet tools — gum (TUI prompts), glow (markdown viewer)
+RUN ARCH="$(dpkg --print-architecture)" && \
+    curl -fsSL "https://github.com/charmbracelet/gum/releases/download/v0.16.0/gum_0.16.0_${ARCH}.deb" -o /tmp/gum.deb && \
+    dpkg -i /tmp/gum.deb && \
+    curl -fsSL "https://github.com/charmbracelet/glow/releases/download/v2.1.0/glow_2.1.0_${ARCH}.deb" -o /tmp/glow.deb && \
+    dpkg -i /tmp/glow.deb && \
+    rm -f /tmp/*.deb
+
 # Claude Code (installed globally via npm — mise provides Node.js at runtime,
 # but we need npm available at build time for the global install)
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \

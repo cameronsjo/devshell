@@ -29,6 +29,7 @@ ssh -p 2222 dev@localhost
 |----------|-------|
 | Shell | zsh, tmux, fzf, ripgrep, fd, bat, delta |
 | Dev | git, gh CLI, jq, curl, wget, htop |
+| TUI | gum (interactive prompts), glow (markdown viewer) |
 | Runtimes | mise (manages Node.js, Python, Go) |
 | AI | Claude Code |
 | Infra | Docker CLI, sops, age |
