@@ -12,8 +12,8 @@ LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
 LABEL org.opencontainers.image.created="${BUILD_TIME}"
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV LANG=C.UTF-8
-ENV LC_ALL=C.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
 # System packages — shell, dev tools, SSH server
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -22,6 +22,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Shell
     zsh \
     tmux \
+    # Locale (prevents setlocale warnings in hooks/scripts)
+    locales \
     # Dev tools
     git \
     jq \
@@ -34,6 +36,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     # Build essentials (needed for some mise-managed runtimes)
     build-essential \
+    && locale-gen en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
 
 # ripgrep, fd-find, bat, delta, fzf — install from GitHub releases (Ubuntu repos are ancient)
