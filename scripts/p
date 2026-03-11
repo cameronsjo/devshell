@@ -31,6 +31,36 @@ open_project() {
     attach_or_switch "$name"
 }
 
+# Git status indicator for a directory
+git_indicator() {
+    local dir="$1"
+    if [ ! -d "${dir}/.git" ]; then
+        echo ""
+        return
+    fi
+
+    local status
+    status="$(git -C "$dir" status --porcelain 2>/dev/null)"
+    if [ -z "$status" ]; then
+        # Check for unpushed commits
+        local ahead
+        ahead="$(git -C "$dir" rev-list --count '@{upstream}..HEAD' 2>/dev/null || echo 0)"
+        if [ "$ahead" -gt 0 ]; then
+            echo " [${ahead} ahead]"
+        else
+            echo " [clean]"
+        fi
+    else
+        local modified untracked
+        modified="$(echo "$status" | grep -c '^ \?[MADRCU]' || true)"
+        untracked="$(echo "$status" | grep -c '^??' || true)"
+        local parts=""
+        [ "$modified" -gt 0 ] && parts="${modified} modified"
+        [ "$untracked" -gt 0 ] && parts="${parts:+${parts}, }${untracked} untracked"
+        echo " [${parts}]"
+    fi
+}
+
 # Gather project directories (one level deep)
 if [ ! -d "$PROJECTS_DIR" ]; then
     echo "No ~/Projects directory found."
@@ -43,25 +73,34 @@ if [ -z "$projects" ]; then
     exit 1
 fi
 
-project_names="$(echo "$projects" | xargs -I{} basename {})"
+# Build display list with git indicators
+display_lines=""
+while IFS= read -r dir; do
+    name="$(basename "$dir")"
+    indicator="$(git_indicator "$dir")"
+    display_lines="${display_lines:+${display_lines}
+}${name}${indicator}"
+done <<< "$projects"
 
 # p <query>: fuzzy match, skip picker if unique
 if [ -n "${1:-}" ]; then
-    matches="$(echo "$project_names" | grep -i "$1" || true)"
+    matches="$(echo "$display_lines" | grep -i "$1" || true)"
     match_count="$(echo "$matches" | grep -c . || true)"
 
     if [ "$match_count" -eq 1 ]; then
-        open_project "${PROJECTS_DIR}/${matches}"
+        name="${matches%% *}"
+        open_project "${PROJECTS_DIR}/${name}"
         exit 0
     elif [ "$match_count" -eq 0 ]; then
         echo "No project matching '$1'."
         exit 1
     fi
-    # Multiple matches — fall through to picker with filter pre-applied
-    project_names="$matches"
+    display_lines="$matches"
 fi
 
 # Interactive pick
-choice="$(echo "$project_names" | gum filter --header "Projects")"
+choice="$(echo "$display_lines" | gum filter --header "Projects")"
 [ -z "$choice" ] && exit 1
-open_project "${PROJECTS_DIR}/${choice}"
+# Strip indicator to get just the project name
+name="${choice%% *}"
+open_project "${PROJECTS_DIR}/${name}"
