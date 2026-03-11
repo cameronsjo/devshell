@@ -1,0 +1,76 @@
+#!/bin/bash
+# g — git operations menu
+# Usage: g    (pick a git operation from the menu)
+set -euo pipefail
+
+if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+    echo "Not in a git repository."
+    exit 1
+fi
+
+actions=(
+    "status"
+    "diff"
+    "log"
+    "pull"
+    "push"
+    "add + commit"
+    "add all + commit"
+    "stash"
+    "stash pop"
+    "branch"
+    "checkout"
+)
+
+choice="$(printf '%s\n' "${actions[@]}" | gum choose --header "Git")"
+
+case "$choice" in
+    "status")
+        git status -sb
+        ;;
+    "diff")
+        git diff
+        ;;
+    "log")
+        git log --oneline -20
+        ;;
+    "pull")
+        git pull
+        ;;
+    "push")
+        git push
+        ;;
+    "add + commit")
+        files="$(git diff --name-only; git ls-files --others --exclude-standard)"
+        [ -z "$files" ] && { echo "Nothing to add."; exit 0; }
+        selected="$(echo "$files" | gum choose --no-limit --header "Stage files")"
+        [ -z "$selected" ] && exit 1
+        echo "$selected" | xargs git add
+        msg="$(gum input --placeholder "Commit message")"
+        [ -z "$msg" ] && exit 1
+        git commit -m "$msg"
+        ;;
+    "add all + commit")
+        git add -A
+        msg="$(gum input --placeholder "Commit message")"
+        [ -z "$msg" ] && exit 1
+        git commit -m "$msg"
+        ;;
+    "stash")
+        git stash
+        ;;
+    "stash pop")
+        git stash pop
+        ;;
+    "branch")
+        branches="$(git branch --format='%(refname:short)')"
+        selected="$(echo "$branches" | gum choose --header "Switch branch")"
+        [ -z "$selected" ] && exit 1
+        git checkout "$selected"
+        ;;
+    "checkout")
+        branch="$(gum input --placeholder "New branch name")"
+        [ -z "$branch" ] && exit 1
+        git checkout -b "$branch"
+        ;;
+esac
