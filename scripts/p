@@ -1,0 +1,67 @@
+#!/bin/bash
+# p — project picker
+# Usage: p          (pick project, open in named tmux session)
+#        p <query>  (fuzzy match project name, skip picker if unique)
+set -euo pipefail
+
+PROJECTS_DIR="${HOME}/Projects"
+
+attach_or_switch() {
+    local session="$1"
+    if [ -n "${TMUX:-}" ]; then
+        tmux switch-client -t "$session"
+    else
+        tmux attach-session -t "$session"
+    fi
+}
+
+open_project() {
+    local dir="$1"
+    local name
+    name="$(basename "$dir")"
+
+    # If session exists, just attach
+    if tmux has-session -t "$name" 2>/dev/null; then
+        attach_or_switch "$name"
+        return
+    fi
+
+    # Create session cd'd into the project
+    tmux new-session -d -s "$name" -c "$dir"
+    attach_or_switch "$name"
+}
+
+# Gather project directories (one level deep)
+if [ ! -d "$PROJECTS_DIR" ]; then
+    echo "No ~/Projects directory found."
+    exit 1
+fi
+
+projects="$(find "$PROJECTS_DIR" -mindepth 1 -maxdepth 1 -type d | sort)"
+if [ -z "$projects" ]; then
+    echo "No projects found in ~/Projects."
+    exit 1
+fi
+
+project_names="$(echo "$projects" | xargs -I{} basename {})"
+
+# p <query>: fuzzy match, skip picker if unique
+if [ -n "${1:-}" ]; then
+    matches="$(echo "$project_names" | grep -i "$1" || true)"
+    match_count="$(echo "$matches" | grep -c . || true)"
+
+    if [ "$match_count" -eq 1 ]; then
+        open_project "${PROJECTS_DIR}/${matches}"
+        exit 0
+    elif [ "$match_count" -eq 0 ]; then
+        echo "No project matching '$1'."
+        exit 1
+    fi
+    # Multiple matches — fall through to picker with filter pre-applied
+    project_names="$matches"
+fi
+
+# Interactive pick
+choice="$(echo "$project_names" | gum filter --header "Projects")"
+[ -z "$choice" ] && exit 1
+open_project "${PROJECTS_DIR}/${choice}"
