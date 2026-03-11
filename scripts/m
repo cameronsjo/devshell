@@ -1,0 +1,31 @@
+#!/bin/bash
+# m — quick notes
+# Usage: m              (open editor, save with timestamp)
+#        m <text>       (save one-liner directly)
+set -euo pipefail
+
+NOTES_DIR="${HOME}/notes"
+mkdir -p "$NOTES_DIR"
+
+timestamp="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+datestamp="$(date -u '+%Y-%m-%d')"
+notes_file="${NOTES_DIR}/${datestamp}.md"
+
+# m <text>: save one-liner directly
+if [ -n "${1:-}" ]; then
+    echo "- ${timestamp} — $*" >> "$notes_file"
+    echo "Saved to ${notes_file}"
+    exit 0
+fi
+
+# m (no args): open gum write for multi-line input
+content="$(gum write --header "Note (Ctrl+D to save)" --char-limit 0)"
+[ -z "$content" ] && exit 1
+
+{
+    echo "- ${timestamp}"
+    echo "$content" | sed 's/^/  /'
+    echo ""
+} >> "$notes_file"
+
+echo "Saved to ${notes_file}"
