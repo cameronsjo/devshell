@@ -111,11 +111,9 @@ RUN ARCH="$(dpkg --print-architecture)" && \
     dpkg -i /tmp/glow.deb && \
     rm -f /tmp/*.deb
 
-# Claude Code (installed globally via npm — mise provides Node.js at runtime,
-# but we need npm available at build time for the global install)
+# Node.js runtime (needed for Claude Code — installed per-user at first boot)
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y nodejs && \
-    npm install -g @anthropic-ai/claude-code && \
     rm -rf /var/lib/apt/lists/*
 
 # SSH configuration

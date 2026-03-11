@@ -26,6 +26,9 @@ passwd -u dev 2>/dev/null || usermod -p '*' dev
 echo "dev ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/dev
 chmod 0440 /etc/sudoers.d/dev
 
+# Ensure user-local bin is on PATH for all login shells
+echo 'export PATH="/home/dev/.local/bin:$PATH"' > /etc/profile.d/devshell-path.sh
+
 # Ensure home directory structure
 mkdir -p /home/dev/.ssh
 chmod 700 /home/dev/.ssh
@@ -61,6 +64,17 @@ else
     ssh-keygen -A
     cp /etc/ssh/ssh_host_* "${HOST_KEY_DIR}/"
     echo "Generated new SSH host keys (saved to persistent volume)"
+fi
+
+# Claude Code — install to user-owned prefix on first run
+# Persistent volume means this survives rebuilds; user ownership enables auto-update
+CLAUDE_PREFIX="/home/dev/.local"
+if [ ! -x "${CLAUDE_PREFIX}/bin/claude" ]; then
+    echo "Installing Claude Code to ${CLAUDE_PREFIX}..."
+    su -s /bin/bash dev -c "npm config set prefix '${CLAUDE_PREFIX}' && npm install -g @anthropic-ai/claude-code"
+    echo "Claude Code installed"
+else
+    echo "Claude Code already installed (skipping)"
 fi
 
 # Create privilege separation directory
