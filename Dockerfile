@@ -34,10 +34,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     gnupg \
     unzip \
+    # Terminal support (kitty, alacritty, foot, etc.)
+    ncurses-term \
     # Build essentials (needed for some mise-managed runtimes)
     build-essential \
     && locale-gen en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
+
+# Ghostty terminfo (not yet in ncurses-term, compile from source)
+COPY rootfs/usr/share/terminfo/ghostty.terminfo /tmp/ghostty.terminfo
+RUN tic -x /tmp/ghostty.terminfo && rm /tmp/ghostty.terminfo
 
 # ripgrep, fd-find, bat, delta, fzf — install from GitHub releases (Ubuntu repos are ancient)
 RUN ARCH="$(dpkg --print-architecture)" && \
