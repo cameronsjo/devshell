@@ -119,6 +119,11 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
 # SSH configuration
 COPY rootfs/etc/ssh/sshd_config /etc/ssh/sshd_config
 
+# Convenience scripts
+COPY scripts/s /usr/local/bin/s
+COPY scripts/p /usr/local/bin/p
+RUN chmod +x /usr/local/bin/s /usr/local/bin/p
+
 # Entrypoint
 COPY scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
