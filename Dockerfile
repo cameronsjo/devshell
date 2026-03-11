@@ -81,6 +81,11 @@ RUN install -m 0755 -d /etc/apt/keyrings && \
     apt-get update && apt-get install -y docker-ce-cli docker-compose-plugin && \
     rm -rf /var/lib/apt/lists/*
 
+# Node.js (needed for pnpm, JS/TS tooling — mise manages project-specific versions)
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
 # mise (runtime version manager — installs Node.js, Python, Go into persistent home)
 RUN curl https://mise.run | sh && \
     cp /root/.local/bin/mise /usr/local/bin/mise
@@ -111,10 +116,17 @@ RUN ARCH="$(dpkg --print-architecture)" && \
     dpkg -i /tmp/glow.deb && \
     rm -f /tmp/*.deb
 
-# Node.js runtime (needed for Claude Code — installed per-user at first boot)
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
-    apt-get install -y nodejs && \
-    rm -rf /var/lib/apt/lists/*
+# Claude Code (native binary — no Node.js dependency, handles auto-updates)
+# Download directly from GCS release bucket, verify checksum, place in PATH
+RUN GCS_BUCKET="https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases" && \
+    VERSION=$(curl -fsSL "$GCS_BUCKET/latest") && \
+    PLATFORM="linux-x64" && \
+    MANIFEST=$(curl -fsSL "$GCS_BUCKET/$VERSION/manifest.json") && \
+    EXPECTED=$(echo "$MANIFEST" | jq -r ".platforms[\"$PLATFORM\"].checksum") && \
+    curl -fsSL "$GCS_BUCKET/$VERSION/$PLATFORM/claude" -o /usr/local/bin/claude && \
+    ACTUAL=$(sha256sum /usr/local/bin/claude | cut -d' ' -f1) && \
+    [ "$ACTUAL" = "$EXPECTED" ] && \
+    chmod +x /usr/local/bin/claude
 
 # SSH configuration
 COPY rootfs/etc/ssh/sshd_config /etc/ssh/sshd_config
