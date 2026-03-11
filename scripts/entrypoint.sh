@@ -29,6 +29,9 @@ chmod 0440 /etc/sudoers.d/dev
 # Ensure user-local bin is on PATH for all login shells
 echo 'export PATH="/home/dev/.local/bin:$PATH"' > /etc/profile.d/devshell-path.sh
 
+# Silence default MOTD, we use our own via profile.d
+: > /etc/motd
+
 # Ensure home directory structure
 mkdir -p /home/dev/.ssh
 chmod 700 /home/dev/.ssh
