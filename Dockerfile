@@ -135,8 +135,10 @@ COPY rootfs/etc/ssh/sshd_config /etc/ssh/sshd_config
 COPY scripts/s scripts/p scripts/g scripts/c scripts/m /usr/local/bin/
 RUN chmod +x /usr/local/bin/s /usr/local/bin/p /usr/local/bin/g /usr/local/bin/c /usr/local/bin/m
 
-# Login banner
+# Login banner (zsh doesn't source /etc/profile.d/, so install to zsh's path)
 COPY scripts/devshell-motd.sh /etc/profile.d/devshell-motd.sh
+RUN chmod +x /etc/profile.d/devshell-motd.sh && \
+    echo '. /etc/profile.d/devshell-motd.sh' >> /etc/zsh/zprofile
 
 # Entrypoint
 COPY scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
