@@ -1,0 +1,77 @@
+#!/bin/bash
+# s — tmux session manager
+# Usage: s          (pick session or create new)
+#        s <name>   (attach/create session by name)
+#        s -k       (pick session to kill)
+#        s -r       (pick session to rename)
+set -euo pipefail
+
+attach_or_switch() {
+    local session="$1"
+    if [ -n "${TMUX:-}" ]; then
+        tmux switch-client -t "$session"
+    else
+        tmux attach-session -t "$session"
+    fi
+}
+
+create_session() {
+    local name="$1"
+    tmux new-session -d -s "$name"
+    attach_or_switch "$name"
+}
+
+list_sessions() {
+    tmux list-sessions -F "#S#{?session_attached, (attached),}" 2>/dev/null
+}
+
+# -k: kill a session
+if [ "${1:-}" = "-k" ]; then
+    sessions="$(list_sessions)" || { echo "No sessions."; exit 0; }
+    target="$(echo "$sessions" | gum choose --header "Kill which session?")"
+    target="${target%% *}"
+    tmux kill-session -t "$target"
+    echo "Killed: $target"
+    exit 0
+fi
+
+# -r: rename a session
+if [ "${1:-}" = "-r" ]; then
+    sessions="$(list_sessions)" || { echo "No sessions."; exit 0; }
+    target="$(echo "$sessions" | gum choose --header "Rename which session?")"
+    target="${target%% *}"
+    new_name="$(gum input --placeholder "New name" --header "Rename '$target' to:")"
+    [ -z "$new_name" ] && exit 1
+    tmux rename-session -t "$target" "$new_name"
+    echo "Renamed: $target → $new_name"
+    exit 0
+fi
+
+# s <name>: attach or create by name
+if [ -n "${1:-}" ]; then
+    if tmux has-session -t "$1" 2>/dev/null; then
+        attach_or_switch "$1"
+    else
+        create_session "$1"
+    fi
+    exit 0
+fi
+
+# s (no args): pick from list or create new
+sessions="$(list_sessions 2>/dev/null)" || sessions=""
+
+if [ -z "$sessions" ]; then
+    name="$(gum input --placeholder "Session name" --header "No sessions. Create one:")"
+    [ -z "$name" ] && exit 1
+    create_session "$name"
+else
+    choice="$(printf "+ New session\n%s" "$sessions" | gum choose --header "Sessions")"
+    if [ "$choice" = "+ New session" ]; then
+        name="$(gum input --placeholder "Session name" --header "New session name:")"
+        [ -z "$name" ] && exit 1
+        create_session "$name"
+    else
+        target="${choice%% *}"
+        attach_or_switch "$target"
+    fi
+fi
