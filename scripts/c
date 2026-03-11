@@ -1,0 +1,56 @@
+#!/bin/bash
+# c — common commands menu
+# Usage: c    (pick a command from the menu)
+#
+# Reads custom commands from ~/.commands if it exists (one per line, format: "label=command")
+# Falls back to built-in defaults.
+set -euo pipefail
+
+CUSTOM_FILE="${HOME}/.commands"
+
+if [ -f "$CUSTOM_FILE" ]; then
+    labels=()
+    commands=()
+    while IFS='=' read -r label cmd; do
+        [ -z "$label" ] && continue
+        [[ "$label" == \#* ]] && continue
+        labels+=("$label")
+        commands+=("$cmd")
+    done < "$CUSTOM_FILE"
+
+    if [ ${#labels[@]} -eq 0 ]; then
+        echo "~/.commands is empty."
+        exit 1
+    fi
+
+    choice="$(printf '%s\n' "${labels[@]}" | gum choose --header "Commands")"
+    [ -z "$choice" ] && exit 0
+
+    for i in "${!labels[@]}"; do
+        if [ "${labels[$i]}" = "$choice" ]; then
+            eval "${commands[$i]}"
+            exit $?
+        fi
+    done
+else
+    # Built-in defaults
+    actions=(
+        "docker ps"
+        "docker compose ps"
+        "htop"
+        "disk usage"
+        "who's logged in"
+        "system info"
+    )
+
+    choice="$(printf '%s\n' "${actions[@]}" | gum choose --header "Commands")"
+
+    case "$choice" in
+        "docker ps")         docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" ;;
+        "docker compose ps") docker compose ps ;;
+        "htop")              htop ;;
+        "disk usage")        df -h / /home/dev 2>/dev/null ;;
+        "who's logged in")   who ;;
+        "system info")       uname -a && echo "" && uptime ;;
+    esac
+fi
