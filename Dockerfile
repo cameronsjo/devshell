@@ -135,25 +135,8 @@ RUN curl -fsSL https://cli.coderabbit.ai/install.sh -o /tmp/cr-install.sh && \
     CODERABBIT_INSTALL_DIR=/usr/local/bin sh /tmp/cr-install.sh && \
     rm /tmp/cr-install.sh
 
-# Claude Code (native binary — no Node.js dependency, handles auto-updates)
-# Download directly from GCS release bucket, verify checksum, place in PATH
-# Fails the build on checksum mismatch so we catch broken installs early
-RUN set -e && \
-    GCS_BUCKET="https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases" && \
-    CC_VERSION=$(curl -fsSL "$GCS_BUCKET/latest") && \
-    PLATFORM="linux-x64" && \
-    echo "Installing Claude Code ${CC_VERSION} for ${PLATFORM}..." && \
-    MANIFEST=$(curl -fsSL "$GCS_BUCKET/$CC_VERSION/manifest.json") && \
-    EXPECTED=$(echo "$MANIFEST" | jq -r ".platforms[\"$PLATFORM\"].checksum") && \
-    curl -fsSL "$GCS_BUCKET/$CC_VERSION/$PLATFORM/claude" -o /usr/local/bin/claude && \
-    ACTUAL=$(sha256sum /usr/local/bin/claude | cut -d' ' -f1) && \
-    if [ "$ACTUAL" != "$EXPECTED" ]; then \
-        echo "FATAL: checksum mismatch (expected ${EXPECTED}, got ${ACTUAL})" >&2; \
-        rm -f /usr/local/bin/claude; \
-        exit 1; \
-    fi && \
-    chmod +x /usr/local/bin/claude && \
-    echo "Claude Code ${CC_VERSION} installed (checksum verified)"
+# Claude Code — installed to persistent volume at first boot (see entrypoint.sh)
+# Lives in /home/dev/.local/bin/ so the dev user owns it and auto-update works
 
 # SSH configuration
 COPY rootfs/etc/ssh/sshd_config /etc/ssh/sshd_config

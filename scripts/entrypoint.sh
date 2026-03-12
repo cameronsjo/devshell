@@ -96,18 +96,20 @@ else
     echo "Homebrew ready"
 fi
 
-# Claude Code — native binary baked into image at /usr/local/bin/claude
-# Falls back to npm install if native binary is missing (shouldn't happen — build fails on miss)
-if command -v claude > /dev/null 2>&1; then
-    CC_VER=$(claude --version 2>/dev/null || echo "unknown")
+# Claude Code — persists on volume at /home/dev/.local/bin/claude
+# First boot: npm install to user prefix. Subsequent boots: already there.
+# Auto-update works because dev user owns the prefix. Update: `claude update`
+CLAUDE_BIN="/home/dev/.local/bin/claude"
+if [ -x "${CLAUDE_BIN}" ]; then
+    CC_VER=$("${CLAUDE_BIN}" --version 2>/dev/null || echo "unknown")
     echo "Claude Code ready (${CC_VER})"
-    # Seed version cache for login banner (avoids slow --version call on every SSH connect)
     echo "${CC_VER}" > /tmp/.claude-version
 else
-    echo "WARNING: Native Claude Code binary missing, falling back to npm install..."
-    CLAUDE_PREFIX="/home/dev/.local"
-    su -s /bin/bash dev -c "npm config set prefix '${CLAUDE_PREFIX}' && npm install -g @anthropic-ai/claude-code"
-    echo "Claude Code installed via npm fallback"
+    echo "Installing Claude Code (first boot)..."
+    su -s /bin/bash dev -c "npm config set prefix '/home/dev/.local' && npm install -g @anthropic-ai/claude-code"
+    CC_VER=$("${CLAUDE_BIN}" --version 2>/dev/null || echo "unknown")
+    echo "Claude Code installed (${CC_VER})"
+    echo "${CC_VER}" > /tmp/.claude-version
 fi
 
 # Create privilege separation directory
