@@ -26,8 +26,13 @@ passwd -u dev 2>/dev/null || usermod -p '*' dev
 echo "dev ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/dev
 chmod 0440 /etc/sudoers.d/dev
 
-# Ensure user-local bin is on PATH for all login shells
-echo 'export PATH="/home/dev/.local/bin:$PATH"' > /etc/profile.d/devshell-path.sh
+# Ensure user-local bin + Homebrew are on PATH for all login shells
+cat > /etc/profile.d/devshell-path.sh << 'PATHEOF'
+export PATH="/home/dev/.local/bin:$PATH"
+if [ -x /home/linuxbrew/.linuxbrew/bin/brew ]; then
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+fi
+PATHEOF
 
 # Silence default MOTD, we use our own via profile.d
 : > /etc/motd
@@ -67,6 +72,28 @@ else
     ssh-keygen -A
     cp /etc/ssh/ssh_host_* "${HOST_KEY_DIR}/"
     echo "Generated new SSH host keys (saved to persistent volume)"
+fi
+
+# Homebrew — persists on volume via symlink: /home/linuxbrew → /home/dev/.homebrew
+# The installer hardcodes /home/linuxbrew/.linuxbrew on Linux, so we symlink the parent.
+# Result: installer writes to /home/linuxbrew/.linuxbrew → actually /home/dev/.homebrew/.linuxbrew
+BREW_VOLUME="/home/dev/.homebrew"
+BREW_PREFIX="/home/linuxbrew/.linuxbrew"
+mkdir -p "${BREW_VOLUME}"
+chown "${PUID}:${PGID}" "${BREW_VOLUME}"
+if [ ! -L /home/linuxbrew ]; then
+    rm -rf /home/linuxbrew
+    ln -s "${BREW_VOLUME}" /home/linuxbrew
+fi
+if [ ! -x "${BREW_PREFIX}/bin/brew" ]; then
+    echo "Installing Homebrew (first boot)..."
+    su -s /bin/bash dev -c "NONINTERACTIVE=1 /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+    su -s /bin/bash dev -c "eval \"\$(${BREW_PREFIX}/bin/brew shellenv)\" && \
+        brew tap cameronsjo/tap && \
+        brew install cadence-hooks"
+    echo "Homebrew + cadence-hooks installed"
+else
+    echo "Homebrew ready"
 fi
 
 # Claude Code — native binary baked into image at /usr/local/bin/claude
