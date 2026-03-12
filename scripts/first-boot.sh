@@ -57,6 +57,16 @@ else
     echo "gopls skipped (install Go via mise first, then re-run)"
 fi
 
+# ── Bun (bunx runner + fast JS/TS toolkit) ───────────────────
+if [ -x "${PREFIX}/bin/bun" ]; then
+    echo "Bun ready ($(${PREFIX}/bin/bun --version 2>/dev/null || echo 'unknown'))"
+elif ! done bun; then
+    echo "Installing Bun..."
+    BUN_INSTALL="${PREFIX}" curl -fsSL https://bun.sh/install | bash
+    stamp bun
+    echo "Bun installed ($(${PREFIX}/bin/bun --version 2>/dev/null || echo 'unknown'))"
+fi
+
 # ── Homebrew + cadence-hooks ─────────────────────────────────
 if [ -x "${BREW_PREFIX}/bin/brew" ]; then
     echo "Homebrew ready"
