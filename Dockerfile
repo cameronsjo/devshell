@@ -135,15 +135,12 @@ RUN curl -fsSL https://cli.coderabbit.ai/install.sh -o /tmp/cr-install.sh && \
     CODERABBIT_INSTALL_DIR=/usr/local/bin sh /tmp/cr-install.sh && \
     rm /tmp/cr-install.sh
 
-# Claude Code — installed to persistent volume at first boot (see entrypoint.sh)
-# Lives in /home/dev/.local/bin/ so the dev user owns it and auto-update works
-
 # SSH configuration
 COPY rootfs/etc/ssh/sshd_config /etc/ssh/sshd_config
 
 # Convenience scripts
-COPY scripts/s scripts/p scripts/g scripts/c scripts/m /usr/local/bin/
-RUN chmod +x /usr/local/bin/s /usr/local/bin/p /usr/local/bin/g /usr/local/bin/c /usr/local/bin/m
+COPY scripts/s scripts/p scripts/g scripts/c scripts/m scripts/first-boot.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/s /usr/local/bin/p /usr/local/bin/g /usr/local/bin/c /usr/local/bin/m /usr/local/bin/first-boot.sh
 
 # Login banner (zsh doesn't source /etc/profile.d/, so install to zsh's path)
 COPY scripts/devshell-motd.sh /etc/profile.d/devshell-motd.sh

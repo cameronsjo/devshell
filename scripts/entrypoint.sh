@@ -74,42 +74,23 @@ else
     echo "Generated new SSH host keys (saved to persistent volume)"
 fi
 
-# Homebrew — persists on volume via symlink: /home/linuxbrew → /home/dev/.homebrew
-# The installer hardcodes /home/linuxbrew/.linuxbrew on Linux, so we symlink the parent.
-# Result: installer writes to /home/linuxbrew/.linuxbrew → actually /home/dev/.homebrew/.linuxbrew
+# Homebrew — symlink /home/linuxbrew → persistent volume so installer's hardcoded path works
 BREW_VOLUME="/home/dev/.homebrew"
-BREW_PREFIX="/home/linuxbrew/.linuxbrew"
 mkdir -p "${BREW_VOLUME}"
 chown "${PUID}:${PGID}" "${BREW_VOLUME}"
 if [ ! -L /home/linuxbrew ]; then
     rm -rf /home/linuxbrew
     ln -s "${BREW_VOLUME}" /home/linuxbrew
 fi
-if [ ! -x "${BREW_PREFIX}/bin/brew" ]; then
-    echo "Installing Homebrew (first boot)..."
-    su -s /bin/bash dev -c "NONINTERACTIVE=1 /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
-    su -s /bin/bash dev -c "eval \"\$(${BREW_PREFIX}/bin/brew shellenv)\" && \
-        brew tap cameronsjo/tap && \
-        brew install cadence-hooks"
-    echo "Homebrew + cadence-hooks installed"
-else
-    echo "Homebrew ready"
-fi
 
-# Claude Code — persists on volume at /home/dev/.local/bin/claude
-# First boot: npm install to user prefix. Subsequent boots: already there.
-# Auto-update works because dev user owns the prefix. Update: `claude update`
+# First-boot provisioning — Claude Code, language servers, Homebrew, cadence-hooks
+# Runs as dev user. Skips anything already installed. Re-run: first-boot.sh
+su -s /bin/bash dev -c /usr/local/bin/first-boot.sh
+
+# Seed claude version cache for login banner
 CLAUDE_BIN="/home/dev/.local/bin/claude"
 if [ -x "${CLAUDE_BIN}" ]; then
-    CC_VER=$("${CLAUDE_BIN}" --version 2>/dev/null || echo "unknown")
-    echo "Claude Code ready (${CC_VER})"
-    echo "${CC_VER}" > /tmp/.claude-version
-else
-    echo "Installing Claude Code (first boot)..."
-    su -s /bin/bash dev -c "npm config set prefix '/home/dev/.local' && npm install -g @anthropic-ai/claude-code"
-    CC_VER=$("${CLAUDE_BIN}" --version 2>/dev/null || echo "unknown")
-    echo "Claude Code installed (${CC_VER})"
-    echo "${CC_VER}" > /tmp/.claude-version
+    "${CLAUDE_BIN}" --version > /tmp/.claude-version 2>/dev/null || true
 fi
 
 # Create privilege separation directory
