@@ -11,6 +11,9 @@ LABEL org.opencontainers.image.version="${VERSION}"
 LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
 LABEL org.opencontainers.image.created="${BUILD_TIME}"
 
+# Bake build metadata into the image (readable at runtime by banner, scripts, etc.)
+RUN echo "${VERSION}" > /etc/devshell-version
+
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
@@ -116,17 +119,30 @@ RUN ARCH="$(dpkg --print-architecture)" && \
     dpkg -i /tmp/glow.deb && \
     rm -f /tmp/*.deb
 
+# CodeRabbit CLI (AI code review — auth persists in /home/dev/.coderabbit/ on volume)
+RUN curl -fsSL https://cli.coderabbit.ai/install.sh -o /tmp/cr-install.sh && \
+    CODERABBIT_INSTALL_DIR=/usr/local/bin sh /tmp/cr-install.sh && \
+    rm /tmp/cr-install.sh
+
 # Claude Code (native binary — no Node.js dependency, handles auto-updates)
 # Download directly from GCS release bucket, verify checksum, place in PATH
-RUN GCS_BUCKET="https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases" && \
-    VERSION=$(curl -fsSL "$GCS_BUCKET/latest") && \
+# Fails the build on checksum mismatch so we catch broken installs early
+RUN set -e && \
+    GCS_BUCKET="https://storage.googleapis.com/claude-code-dist-86c565f3-f756-42ad-8dfa-d59b1c096819/claude-code-releases" && \
+    CC_VERSION=$(curl -fsSL "$GCS_BUCKET/latest") && \
     PLATFORM="linux-x64" && \
-    MANIFEST=$(curl -fsSL "$GCS_BUCKET/$VERSION/manifest.json") && \
+    echo "Installing Claude Code ${CC_VERSION} for ${PLATFORM}..." && \
+    MANIFEST=$(curl -fsSL "$GCS_BUCKET/$CC_VERSION/manifest.json") && \
     EXPECTED=$(echo "$MANIFEST" | jq -r ".platforms[\"$PLATFORM\"].checksum") && \
-    curl -fsSL "$GCS_BUCKET/$VERSION/$PLATFORM/claude" -o /usr/local/bin/claude && \
+    curl -fsSL "$GCS_BUCKET/$CC_VERSION/$PLATFORM/claude" -o /usr/local/bin/claude && \
     ACTUAL=$(sha256sum /usr/local/bin/claude | cut -d' ' -f1) && \
-    [ "$ACTUAL" = "$EXPECTED" ] && \
-    chmod +x /usr/local/bin/claude
+    if [ "$ACTUAL" != "$EXPECTED" ]; then \
+        echo "FATAL: checksum mismatch (expected ${EXPECTED}, got ${ACTUAL})" >&2; \
+        rm -f /usr/local/bin/claude; \
+        exit 1; \
+    fi && \
+    chmod +x /usr/local/bin/claude && \
+    echo "Claude Code ${CC_VERSION} installed (checksum verified)"
 
 # SSH configuration
 COPY rootfs/etc/ssh/sshd_config /etc/ssh/sshd_config

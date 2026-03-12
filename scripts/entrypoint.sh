@@ -69,15 +69,18 @@ else
     echo "Generated new SSH host keys (saved to persistent volume)"
 fi
 
-# Claude Code — install to user-owned prefix on first run
-# Persistent volume means this survives rebuilds; user ownership enables auto-update
-CLAUDE_PREFIX="/home/dev/.local"
-if [ ! -x "${CLAUDE_PREFIX}/bin/claude" ]; then
-    echo "Installing Claude Code to ${CLAUDE_PREFIX}..."
-    su -s /bin/bash dev -c "npm config set prefix '${CLAUDE_PREFIX}' && npm install -g @anthropic-ai/claude-code"
-    echo "Claude Code installed"
+# Claude Code — native binary baked into image at /usr/local/bin/claude
+# Falls back to npm install if native binary is missing (shouldn't happen — build fails on miss)
+if command -v claude > /dev/null 2>&1; then
+    CC_VER=$(claude --version 2>/dev/null || echo "unknown")
+    echo "Claude Code ready (${CC_VER})"
+    # Seed version cache for login banner (avoids slow --version call on every SSH connect)
+    echo "${CC_VER}" > /tmp/.claude-version
 else
-    echo "Claude Code already installed (skipping)"
+    echo "WARNING: Native Claude Code binary missing, falling back to npm install..."
+    CLAUDE_PREFIX="/home/dev/.local"
+    su -s /bin/bash dev -c "npm config set prefix '${CLAUDE_PREFIX}' && npm install -g @anthropic-ai/claude-code"
+    echo "Claude Code installed via npm fallback"
 fi
 
 # Create privilege separation directory
