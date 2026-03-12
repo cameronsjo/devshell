@@ -41,6 +41,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ncurses-term \
     # Build essentials (needed for some mise-managed runtimes)
     build-essential \
+    # Diagnostics (network, process, filesystem)
+    dnsutils \
+    iproute2 \
+    strace \
+    file \
     && locale-gen en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -118,6 +123,12 @@ RUN ARCH="$(dpkg --print-architecture)" && \
     curl -fsSL "https://github.com/charmbracelet/glow/releases/download/v2.1.0/glow_2.1.0_${ARCH}.deb" -o /tmp/glow.deb && \
     dpkg -i /tmp/glow.deb && \
     rm -f /tmp/*.deb
+
+# duf (prettier df — disk usage at a glance)
+RUN ARCH="$(dpkg --print-architecture)" && \
+    curl -fsSL "https://github.com/muesli/duf/releases/download/v0.8.1/duf_0.8.1_linux_${ARCH}.deb" -o /tmp/duf.deb && \
+    dpkg -i /tmp/duf.deb && \
+    rm -f /tmp/duf.deb
 
 # CodeRabbit CLI (AI code review — auth persists in /home/dev/.coderabbit/ on volume)
 RUN curl -fsSL https://cli.coderabbit.ai/install.sh -o /tmp/cr-install.sh && \
