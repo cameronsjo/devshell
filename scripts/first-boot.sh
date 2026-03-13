@@ -11,12 +11,12 @@ mkdir -p "${STAMP_DIR}"
 
 # Stamp file pattern — skip sections that already completed
 stamp() { touch "${STAMP_DIR}/$1.done"; }
-done() { [ -f "${STAMP_DIR}/$1.done" ]; }
+is_done() { [ -f "${STAMP_DIR}/$1.done" ]; }
 
 # ── Claude Code ──────────────────────────────────────────────
 if [ -x "${PREFIX}/bin/claude" ]; then
     echo "Claude Code ready ($(${PREFIX}/bin/claude --version 2>/dev/null || echo 'unknown'))"
-elif ! done claude-code; then
+elif ! is_done claude-code; then
     echo "Installing Claude Code..."
     npm config set prefix "${PREFIX}"
     npm install -g @anthropic-ai/claude-code
@@ -28,7 +28,7 @@ fi
 # All npm-based servers install to the same prefix on the volume.
 # Update: npm update -g <package>
 
-if ! done lsp-servers; then
+if ! is_done lsp-servers; then
     echo "Installing language servers..."
     npm config set prefix "${PREFIX}"
 
@@ -60,7 +60,7 @@ fi
 # ── Bun (bunx runner + fast JS/TS toolkit) ───────────────────
 if [ -x "${PREFIX}/bin/bun" ]; then
     echo "Bun ready ($(${PREFIX}/bin/bun --version 2>/dev/null || echo 'unknown'))"
-elif ! done bun; then
+elif ! is_done bun; then
     echo "Installing Bun..."
     BUN_INSTALL="${PREFIX}" curl -fsSL https://bun.sh/install | bash
     stamp bun
