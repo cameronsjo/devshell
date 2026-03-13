@@ -18,8 +18,7 @@ if [ -x "${PREFIX}/bin/claude" ]; then
     echo "Claude Code ready ($(${PREFIX}/bin/claude --version 2>/dev/null || echo 'unknown'))"
 elif ! is_done claude-code; then
     echo "Installing Claude Code..."
-    npm config set prefix "${PREFIX}"
-    npm install -g @anthropic-ai/claude-code
+    curl -fsSL https://claude.ai/install.sh | bash
     stamp claude-code
     echo "Claude Code installed ($(${PREFIX}/bin/claude --version 2>/dev/null || echo 'unknown'))"
 fi
@@ -31,13 +30,7 @@ fi
 if ! is_done lsp-servers; then
     echo "Installing language servers..."
     npm config set prefix "${PREFIX}"
-
-    # TypeScript / JavaScript
-    npm install -g typescript typescript-language-server
-
-    # Python
-    npm install -g pyright
-
+    npm install -g typescript typescript-language-server pyright
     stamp lsp-servers
     echo "Language servers installed"
 else
@@ -70,12 +63,13 @@ fi
 # ── Homebrew + cadence-hooks ─────────────────────────────────
 if [ -x "${BREW_PREFIX}/bin/brew" ]; then
     echo "Homebrew ready"
-else
+elif ! is_done homebrew; then
     echo "Installing Homebrew..."
     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     eval "$(${BREW_PREFIX}/bin/brew shellenv)"
     brew tap cameronsjo/tap
     brew install cadence-hooks
+    stamp homebrew
     echo "Homebrew + cadence-hooks installed"
 fi
 
