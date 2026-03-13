@@ -55,7 +55,7 @@ if [ -x "${PREFIX}/bin/bun" ]; then
     echo "Bun ready ($(${PREFIX}/bin/bun --version 2>/dev/null || echo 'unknown'))"
 elif ! is_done bun; then
     echo "Installing Bun..."
-    BUN_INSTALL="${PREFIX}" curl -fsSL https://bun.sh/install | bash
+    curl -fsSL https://bun.sh/install | BUN_INSTALL="${PREFIX}" bash
     stamp bun
     echo "Bun installed ($(${PREFIX}/bin/bun --version 2>/dev/null || echo 'unknown'))"
 fi
