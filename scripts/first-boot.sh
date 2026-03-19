@@ -14,14 +14,19 @@ stamp() { touch "${STAMP_DIR}/$1.done"; }
 done() { [ -f "${STAMP_DIR}/$1.done" ]; }
 
 # ── Claude Code ──────────────────────────────────────────────
-if [ -x "${PREFIX}/bin/claude" ]; then
-    echo "Claude Code ready ($(${PREFIX}/bin/claude --version 2>/dev/null || echo 'unknown'))"
+# Native installer places binary at ~/.claude/bin/claude (on persistent volume)
+if [ -x "${HOME}/.claude/bin/claude" ]; then
+    echo "Claude Code ready ($(${HOME}/.claude/bin/claude --version 2>/dev/null || echo 'unknown'))"
 elif ! done claude-code; then
     echo "Installing Claude Code..."
-    npm config set prefix "${PREFIX}"
-    npm install -g @anthropic-ai/claude-code
+    curl -fsSL https://claude.ai/install.sh | bash
+    # Clean up legacy npm install if present
+    if [ -L "${PREFIX}/bin/claude" ]; then
+        rm -f "${PREFIX}/bin/claude"
+        rm -rf "${PREFIX}/lib/node_modules/@anthropic-ai/claude-code"
+    fi
     stamp claude-code
-    echo "Claude Code installed ($(${PREFIX}/bin/claude --version 2>/dev/null || echo 'unknown'))"
+    echo "Claude Code installed ($(${HOME}/.claude/bin/claude --version 2>/dev/null || echo 'unknown'))"
 fi
 
 # ── Language servers (for Claude Code LSP plugins) ───────────
