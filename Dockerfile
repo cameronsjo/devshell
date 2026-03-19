@@ -17,6 +17,8 @@ RUN echo "${VERSION}" > /etc/devshell-version
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
+ENV EDITOR=nvim
+ENV VISUAL=nvim
 
 # System packages — shell, dev tools, SSH server
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -29,6 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     locales \
     # Dev tools
     git \
+    neovim \
     jq \
     curl \
     wget \
