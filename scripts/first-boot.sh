@@ -11,13 +11,13 @@ mkdir -p "${STAMP_DIR}"
 
 # Stamp file pattern — skip sections that already completed
 stamp() { touch "${STAMP_DIR}/$1.done"; }
-done() { [ -f "${STAMP_DIR}/$1.done" ]; }
+is_done() { [ -f "${STAMP_DIR}/$1.done" ]; }
 
 # ── Claude Code ──────────────────────────────────────────────
 # Native installer places binary at ~/.claude/bin/claude (on persistent volume)
 if [ -x "${HOME}/.claude/bin/claude" ]; then
     echo "Claude Code ready ($(${HOME}/.claude/bin/claude --version 2>/dev/null || echo 'unknown'))"
-elif ! done claude-code; then
+elif ! is_done claude-code; then
     echo "Installing Claude Code..."
     curl -fsSL https://claude.ai/install.sh | bash
     # Clean up legacy npm install if present
@@ -33,16 +33,10 @@ fi
 # All npm-based servers install to the same prefix on the volume.
 # Update: npm update -g <package>
 
-if ! done lsp-servers; then
+if ! is_done lsp-servers; then
     echo "Installing language servers..."
     npm config set prefix "${PREFIX}"
-
-    # TypeScript / JavaScript
-    npm install -g typescript typescript-language-server
-
-    # Python
-    npm install -g pyright
-
+    npm install -g typescript typescript-language-server pyright
     stamp lsp-servers
     echo "Language servers installed"
 else
@@ -65,9 +59,9 @@ fi
 # ── Bun (bunx runner + fast JS/TS toolkit) ───────────────────
 if [ -x "${PREFIX}/bin/bun" ]; then
     echo "Bun ready ($(${PREFIX}/bin/bun --version 2>/dev/null || echo 'unknown'))"
-elif ! done bun; then
+elif ! is_done bun; then
     echo "Installing Bun..."
-    BUN_INSTALL="${PREFIX}" curl -fsSL https://bun.sh/install | bash
+    curl -fsSL https://bun.sh/install | BUN_INSTALL="${PREFIX}" bash
     stamp bun
     echo "Bun installed ($(${PREFIX}/bin/bun --version 2>/dev/null || echo 'unknown'))"
 fi
@@ -75,12 +69,13 @@ fi
 # ── Homebrew + cadence-hooks ─────────────────────────────────
 if [ -x "${BREW_PREFIX}/bin/brew" ]; then
     echo "Homebrew ready"
-else
+elif ! is_done homebrew; then
     echo "Installing Homebrew..."
     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     eval "$(${BREW_PREFIX}/bin/brew shellenv)"
     brew tap cameronsjo/tap
     brew install cadence-hooks
+    stamp homebrew
     echo "Homebrew + cadence-hooks installed"
 fi
 
