@@ -44,6 +44,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ncurses-term \
     # Build essentials (needed for some mise-managed runtimes)
     build-essential \
+    # IRC
+    irssi \
     # Diagnostics (network, process, filesystem)
     dnsutils \
     iproute2 \
@@ -142,8 +144,8 @@ RUN curl -fsSL https://cli.coderabbit.ai/install.sh -o /tmp/cr-install.sh && \
 COPY rootfs/etc/ssh/sshd_config /etc/ssh/sshd_config
 
 # Convenience scripts
-COPY scripts/s scripts/p scripts/g scripts/c scripts/m scripts/first-boot.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/s /usr/local/bin/p /usr/local/bin/g /usr/local/bin/c /usr/local/bin/m /usr/local/bin/first-boot.sh
+COPY scripts/s scripts/p scripts/g scripts/c scripts/m scripts/first-boot.sh scripts/join-abook-link-irc.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/s /usr/local/bin/p /usr/local/bin/g /usr/local/bin/c /usr/local/bin/m /usr/local/bin/first-boot.sh /usr/local/bin/join-abook-link-irc.sh
 
 # Login banner (zsh doesn't source /etc/profile.d/, so install to zsh's path)
 COPY scripts/devshell-motd.sh /etc/profile.d/devshell-motd.sh
