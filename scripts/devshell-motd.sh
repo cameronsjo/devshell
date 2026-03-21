@@ -32,8 +32,8 @@ if [ -n "$HOME_USAGE" ] && [ "$HOME_USAGE" -gt 90 ] 2>/dev/null; then
     WARNINGS="${WARNINGS}  !!  Home volume ${HOME_USAGE}%% full\n"
 fi
 
-if [ ! -f /home/dev/.ssh/authorized_keys ] || [ ! -s /home/dev/.ssh/authorized_keys ]; then
-    WARNINGS="${WARNINGS}  !!  No SSH authorized_keys (password auth may be disabled)\n"
+if [ ! -s /home/dev/.ssh/authorized_keys ]; then
+    WARNINGS="${WARNINGS}  !!  No SSH keys loaded (set SSHID_USER or add keys to ~/.ssh/local_keys)\n"
 fi
 
 printf '\n'

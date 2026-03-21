@@ -7,19 +7,16 @@ Connect from your phone (Termius) or laptop over Tailscale. Not Claude-specific 
 ## Quick Start
 
 ```bash
-# 1. Run the container
+# 1. Run the container (with sshid.io key provisioning)
 docker run -d --name devshell \
   -p 2222:22 \
   -e PUID=1000 -e PGID=1000 \
+  -e SSHID_USER=cameronsjo \
   -v /path/to/home:/home/dev \
   -v /var/run/docker.sock:/var/run/docker.sock \
   ghcr.io/cameronsjo/devshell:latest
 
-# 2. Drop your SSH public key
-docker exec devshell bash -c \
-  'echo "ssh-ed25519 AAAA..." >> /home/dev/.ssh/authorized_keys'
-
-# 3. Connect
+# 2. Connect
 ssh -p 2222 dev@localhost
 ```
 
@@ -44,12 +41,14 @@ Runtimes install into your persistent home on first use via `mise install`. The 
 | `PUID` | `1000` | UID for the `dev` user |
 | `PGID` | `1000` | GID for the `dev` user |
 | `TZ` | (system) | Timezone |
+| `SSHID_USER` | (none) | [sshid.io](https://sshid.io) username — fetches SSH keys on boot |
+| `GITHUB_USER` | (none) | GitHub username — fetches SSH keys from `github.com/<user>.keys` on boot |
 
 ## Persistence
 
 Mount `/home/dev` to a persistent volume. Everything lives there:
 
-- SSH keys and authorized_keys
+- SSH keys (`~/.ssh/local_keys` for manually-added keys)
 - Git repos
 - mise runtimes (Node.js, Python, Go)
 - Claude Code state (`~/.claude/`)

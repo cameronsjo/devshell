@@ -41,9 +41,32 @@ PATHEOF
 mkdir -p /home/dev/.ssh
 chmod 700 /home/dev/.ssh
 
-# Create authorized_keys if missing (user drops pubkey into persistent volume)
-touch /home/dev/.ssh/authorized_keys
-chmod 600 /home/dev/.ssh/authorized_keys
+# Authorized keys — start fresh each boot with remote sources, then append local keys
+AUTH_KEYS="/home/dev/.ssh/authorized_keys"
+LOCAL_KEYS="/home/dev/.ssh/local_keys"
+: > "${AUTH_KEYS}"
+
+# Fetch keys from remote identity providers
+fetch_keys() {
+    local label="$1" url="$2"
+    echo "Fetching SSH keys from ${label}..."
+    if curl -fsSL --max-time 10 "${url}" >> "${AUTH_KEYS}" 2>/dev/null; then
+        echo "SSH keys loaded from ${label}"
+    else
+        echo "WARNING: Failed to fetch keys from ${label}"
+    fi
+}
+
+[ -n "${SSHID_USER:-}" ] && fetch_keys "sshid.io/${SSHID_USER}" "https://sshid.io/${SSHID_USER}"
+[ -n "${GITHUB_USER:-}" ] && fetch_keys "github.com/${GITHUB_USER}" "https://github.com/${GITHUB_USER}.keys"
+
+# Append any manually-added local keys (persistent volume)
+if [ -f "${LOCAL_KEYS}" ] && [ -s "${LOCAL_KEYS}" ]; then
+    cat "${LOCAL_KEYS}" >> "${AUTH_KEYS}"
+    echo "Local SSH keys appended from ${LOCAL_KEYS}"
+fi
+
+chmod 600 "${AUTH_KEYS}"
 
 # Fix ownership on home directory
 chown -R "${PUID}:${PGID}" /home/dev
