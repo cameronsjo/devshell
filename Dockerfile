@@ -115,6 +115,9 @@ RUN curl -fsSL "https://github.com/getsops/sops/releases/download/v3.9.4/sops-v3
     | tar xz -C /tmp && mv /tmp/age/age /usr/local/bin/age && \
     mv /tmp/age/age-keygen /usr/local/bin/age-keygen && rm -rf /tmp/age
 
+# chezmoi (dotfile manager — first-boot uses it to provision shell config)
+RUN sh -c "$(curl -fsLS get.chezmoi.io)" -- -b /usr/local/bin
+
 # Starship prompt + zoxide (smart cd) — direct binary installs to /usr/local/bin
 RUN curl -fsSL "https://github.com/starship/starship/releases/latest/download/starship-x86_64-unknown-linux-gnu.tar.gz" \
     | tar xz -C /usr/local/bin starship && \

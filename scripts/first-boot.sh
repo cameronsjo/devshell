@@ -13,6 +13,36 @@ mkdir -p "${STAMP_DIR}"
 stamp() { touch "${STAMP_DIR}/$1.done"; }
 is_done() { [ -f "${STAMP_DIR}/$1.done" ]; }
 
+# ── Oh-My-Zsh ────────────────────────────────────────────────
+if [ -d "${HOME}/.oh-my-zsh" ]; then
+    echo "Oh-My-Zsh ready"
+elif ! is_done oh-my-zsh; then
+    echo "Installing Oh-My-Zsh..."
+    RUNZSH=no KEEP_ZSHRC=yes sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+    stamp oh-my-zsh
+    echo "Oh-My-Zsh installed"
+fi
+
+# ── Chezmoi (dotfiles) ──────────────────────────────────────
+# Provisions .zshrc, .gitconfig, starship.toml, and other shell config.
+# On first boot: init from GitHub repo with headless=true (no 1Password).
+# On subsequent boots: apply any upstream changes.
+CHEZMOI_CONFIG="${HOME}/.config/chezmoi/chezmoi.toml"
+if [ -f "${CHEZMOI_CONFIG}" ]; then
+    echo "Chezmoi ready — applying dotfiles..."
+    chezmoi apply --no-tty || echo "WARNING: chezmoi apply failed (non-fatal)"
+elif ! is_done chezmoi; then
+    echo "Initializing chezmoi from cameronsjo/dotfiles..."
+    chezmoi init cameronsjo/dotfiles --no-tty --apply \
+        --promptString name="Cameron Sjo" \
+        --promptString email="cameronsjo@users.noreply.github.com" \
+        --promptString obsidianVault="/vault" \
+        --promptString projectsDir="~/Projects" \
+        --promptBool headless=true
+    stamp chezmoi
+    echo "Chezmoi initialized and applied"
+fi
+
 # ── Claude Code ──────────────────────────────────────────────
 # Native installer places binary at ~/.claude/bin/claude (on persistent volume)
 if [ -x "${HOME}/.claude/bin/claude" ]; then

@@ -7,6 +7,14 @@ PGID="${PGID:-1000}"
 
 echo "Starting devshell with UID=${PUID}, GID=${PGID}"
 
+# ── Volume health check ─────────────────────────────────────
+# Detect fresh vs existing volume and validate writability
+if [ -f "/home/dev/.local/share/devshell/chezmoi.done" ]; then
+    echo "Existing volume detected — incremental provisioning"
+else
+    echo "Fresh volume detected — full first-boot provisioning will run"
+fi
+
 # Remove existing ubuntu user/group that ships with the base image (owns UID/GID 1000)
 userdel -r ubuntu 2>/dev/null || true
 groupdel ubuntu 2>/dev/null || true
@@ -36,6 +44,15 @@ PATHEOF
 
 # Silence default MOTD, we use our own via profile.d
 : > /etc/motd
+
+# Validate volume writability before proceeding
+if su -s /bin/sh dev -c "touch /home/dev/.volume-ok" 2>/dev/null; then
+    rm -f /home/dev/.volume-ok
+    echo "Persistent volume verified (writable)"
+else
+    echo "ERROR: /home/dev is not writable — check volume mount permissions"
+    echo "Continuing with potentially ephemeral storage..."
+fi
 
 # Ensure home directory structure
 mkdir -p /home/dev/.ssh
