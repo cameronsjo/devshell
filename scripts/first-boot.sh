@@ -33,14 +33,18 @@ if [ -f "${CHEZMOI_CONFIG}" ]; then
     chezmoi apply --no-tty || echo "WARNING: chezmoi apply failed (non-fatal)"
 elif ! is_done chezmoi; then
     echo "Initializing chezmoi from cameronsjo/dotfiles..."
-    chezmoi init cameronsjo/dotfiles --no-tty --apply \
+    if chezmoi init cameronsjo/dotfiles --no-tty --apply \
         --promptString name="Cameron Sjo" \
         --promptString email="cameronsjo@users.noreply.github.com" \
         --promptString obsidianVault="/vault" \
         --promptString projectsDir="~/Projects" \
-        --promptBool headless=true
-    stamp chezmoi
-    echo "Chezmoi initialized and applied"
+        --promptBool headless=true; then
+        stamp chezmoi
+        echo "Chezmoi initialized and applied"
+    else
+        echo "WARNING: chezmoi init failed (non-fatal) — dotfiles not provisioned"
+        echo "Re-run manually: chezmoi init cameronsjo/dotfiles --apply"
+    fi
 fi
 
 # ── Claude Code ──────────────────────────────────────────────
