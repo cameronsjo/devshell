@@ -33,17 +33,22 @@ if [ -f "${CHEZMOI_CONFIG}" ]; then
     chezmoi apply --no-tty || echo "WARNING: chezmoi apply failed (non-fatal)"
 elif ! is_done chezmoi; then
     echo "Initializing chezmoi from cameronsjo/dotfiles..."
-    if chezmoi init git@github.com:cameronsjo/dotfiles.git --no-tty --apply \
-        --promptString name="Cameron Sjo" \
-        --promptString email="cameronsjo@users.noreply.github.com" \
-        --promptString obsidianVault="/vault" \
-        --promptString projectsDir="~/Projects" \
-        --promptBool headless=true; then
+    # Pre-seed config so promptStringOnce/promptBoolOnce don't prompt
+    mkdir -p "${HOME}/.config/chezmoi"
+    cat > "${CHEZMOI_CONFIG}" << 'CHEZEOF'
+[data]
+    name = "Cameron Sjo"
+    email = "cameronsjo@users.noreply.github.com"
+    obsidianVault = "/vault"
+    projectsDir = "~/Projects"
+    headless = true
+CHEZEOF
+    if chezmoi init git@github.com:cameronsjo/dotfiles.git --no-tty --apply; then
         stamp chezmoi
         echo "Chezmoi initialized and applied"
     else
         echo "WARNING: chezmoi init failed (non-fatal) — dotfiles not provisioned"
-        echo "Re-run manually: chezmoi init cameronsjo/dotfiles --apply"
+        echo "Re-run manually: chezmoi init git@github.com:cameronsjo/dotfiles.git --apply"
     fi
 fi
 

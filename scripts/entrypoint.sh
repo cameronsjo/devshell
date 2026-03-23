@@ -134,6 +134,7 @@ Host github.com
     StrictHostKeyChecking accept-new
 SSHEOF
 chmod 600 /home/dev/.ssh/config
+chown "${PUID}:${PGID}" /home/dev/.ssh/config
 
 # Homebrew — symlink /home/linuxbrew → persistent volume so installer's hardcoded path works
 BREW_VOLUME="/home/dev/.homebrew"
