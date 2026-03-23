@@ -114,6 +114,27 @@ else
     echo "Generated new SSH host keys (saved to persistent volume)"
 fi
 
+# GitHub deploy key — used by chezmoi to clone private dotfiles repo
+# Generated once, persisted on volume. Add the public key as a read-only
+# deploy key on the target repo (e.g., cameronsjo/dotfiles).
+DEPLOY_KEY="/home/dev/.ssh/github_deploy_key"
+if [ ! -f "${DEPLOY_KEY}" ]; then
+    su -s /bin/sh dev -c "ssh-keygen -t ed25519 -f ${DEPLOY_KEY} -N '' -C 'devshell-deploy-key'"
+    echo "Generated GitHub deploy key — add this public key to your repo:"
+    cat "${DEPLOY_KEY}.pub"
+fi
+
+# Configure SSH to use the deploy key for github.com
+cat > /home/dev/.ssh/config << 'SSHEOF'
+Host github.com
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/github_deploy_key
+    IdentitiesOnly yes
+    StrictHostKeyChecking accept-new
+SSHEOF
+chmod 600 /home/dev/.ssh/config
+
 # Homebrew — symlink /home/linuxbrew → persistent volume so installer's hardcoded path works
 BREW_VOLUME="/home/dev/.homebrew"
 mkdir -p "${BREW_VOLUME}"

@@ -33,7 +33,7 @@ if [ -f "${CHEZMOI_CONFIG}" ]; then
     chezmoi apply --no-tty || echo "WARNING: chezmoi apply failed (non-fatal)"
 elif ! is_done chezmoi; then
     echo "Initializing chezmoi from cameronsjo/dotfiles..."
-    if chezmoi init cameronsjo/dotfiles --no-tty --apply \
+    if chezmoi init git@github.com:cameronsjo/dotfiles.git --no-tty --apply \
         --promptString name="Cameron Sjo" \
         --promptString email="cameronsjo@users.noreply.github.com" \
         --promptString obsidianVault="/vault" \
